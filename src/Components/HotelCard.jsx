@@ -20,7 +20,8 @@ shadow-[0px_4px_4px_rbga(0,0,0,0,0.5)]' />
                 </div>
             </div>
             <div>
-                 <img src={assets.locationFilledIcon} alt="star-icon"/> 4.5
+                 <img src={assets.locationFilledIcon} alt="location-icon"/> 4.5
+                 <img src={assets.locationFilledIcon} alt="location-icon"/> 4.5
             </div>
         </div>
    </Link>
