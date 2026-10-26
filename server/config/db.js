@@ -1,29 +1,26 @@
 import mongoose from "mongoose";
 
-// Keep track of connection status globally so Vercel can reuse it
-let isConnected = false;
+let cached = global._mongoose || (global._mongoose = { conn: null, promise: null });
 
 const connectDB = async () => {
-    if (isConnected) {
-        console.log('Reusing existing database connection pool');
-        return;
+    if (cached.conn) return cached.conn;
+
+    if (!cached.promise) {
+        cached.promise = mongoose.connect(process.env.MONGODB_URI, {
+            dbName: "hotel-booking",
+            serverSelectionTimeoutMS: 5000,
+            bufferCommands: false,
+        });
     }
 
     try {
-        mongoose.connection.on('connected', () => {
-            console.log('Database Connected');
-            isConnected = true;
-        });
-
-        // FIXED: Pass MONGODB_URI directly and use dbName option instead of template slash interpolation
-        await mongoose.connect(process.env.MONGODB_URI, {
-            dbName: "hotel-booking",
-            serverSelectionTimeoutMS: 5000 // If DB goes down, fail fast in 5s instead of hanging for 10s
-        });
-
-    } catch (error) {
-        console.error("Database connection error:", error.message);
+        cached.conn = await cached.promise;
+        console.log("Database Connected");
+    } catch (err) {
+        cached.promise = null; // allow retry on next request
+        throw err;             // surface the real error
     }
-}
+    return cached.conn;
+};
 
 export default connectDB;

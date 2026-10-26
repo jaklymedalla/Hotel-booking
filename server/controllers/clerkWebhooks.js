@@ -1,56 +1,52 @@
 import User from "../models/User.js";
 import { Webhook } from "svix";
-import connectDB from "../config/db.js"; // Ensure correct path to db.js
+
 
 const clerkWebhooks = async (req, res) => {
-    try {
-        // 1. Explicitly await the database connection pool connection check
-        await connectDB();
+    try{
+        //Create a svix instance with clerk webhook secret.
+        const  whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET)
 
-        // 2. Validate standard webhook verification tokens
-        const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
+        //Getting Headers
         const headers = {
             "svix-id": req.headers["svix-id"],
             "svix-timestamp": req.headers["svix-timestamp"],
             "svix-signature": req.headers["svix-signature"],
         };
         
-        await whook.verify(JSON.stringify(req.body), headers);
-        const { data, type } = req.body;
+        //Verify Headers
+        await whook.verify(JSON.stringify(req.body), headers)
+        //Getting Data from request body.
+        const {data, type} = req.body
 
         const userData = {
             _id: data.id,
-            email: data.email_addresses?.[0]?.email_address || "",
-            username: `${data.first_name || ""} ${data.last_name || ""}`.trim(),
+            email: data.email_addresses?.[0]?.email_address,
+            username: data.first_name + " " + data.last_name,
             image: data.image_url,
-        };
+        }
 
-        // 3. Complete database modifications synchronously before returning HTTP codes
+        //Switch cases for different events
         switch (type) {
-            case "user.created": {
-                // Turn off internal mongoose buffering limits for serverless functions
-                await User.create(userData, { bufferCommands: false });
-                console.log("MongoDB Success: Document added!");
-                return res.json({ success: true, message: "User created in Database" });
+            case "user.created":{
+                await User.create(userData);
+                break;
             }
-            case "user.updated": {
-                await User.findByIdAndUpdate(data.id, userData, { new: true, bufferCommands: false });
-                console.log("MongoDB Success: Document updated!");
-                return res.json({ success: true, message: "User updated in Database" });
+            case "user.updated":{
+                await User.findByIdAndDelete(data.id);
+                break;
             }
+                
             default:
                 break;
         }
+        res.json({sucess: true, message: "Webhook Received"})
 
-        return res.json({ success: true, message: "Webhook processed (ignored action type)" });
-
-    } catch (error) {
-        console.error("Serverless Webhook Exception Log:", error.message);
-        // Fall back gracefully with a failure code block so Clerk can log it
-        return res.status(500).json({ success: false, message: error.message });
+    } catch(error){
+        console.log(error.message);
+        res.json({ success: false, message: error.message })
     }
 }
 
-export default clerkWebhooks;
-
+export default clerkWebhooks
  
