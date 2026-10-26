@@ -9,4 +9,9 @@ const userSchema = mongoose.Schema({
     image: {type: String, required: true},
     role: {type: String, enum: ["user", "hotelOwner"], default: "user"},
     recentSearchedCities: [{type: String, required: true}],
-}, {timestamps: true})
+}, {timestamps: true}
+);
+
+const User = mongoose.model("User", userSchema);
+
+export default User;
