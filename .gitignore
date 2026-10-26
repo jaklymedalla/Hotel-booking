@@ -1,8 +1,1 @@
-# Matches node_modules in the root, client, and server folders
-**/node_modules/
-
-# Matches any file ending in .local in any subfolder
-**/*.local
-
-# Highly recommended: safety net for all variations of env files
-**/.env*
+node_modules
